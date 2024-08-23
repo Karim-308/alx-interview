@@ -1,9 +1,9 @@
 #!/usr/bin/python3
-""" Minimum Operations
-    """
+"""Minimum Operations."""
+
 
 def minOperations(n: int) -> int:
-    """ Calculate the minimum operations needed to get n H characters """
+    """Calculate the minimum operations needed."""
     if n <= 1:
         return 0
 
@@ -15,5 +15,6 @@ def minOperations(n: int) -> int:
             operations += divisor
             n //= divisor
         divisor += 1
-    
+
     return operations
+    
