@@ -1,35 +1,60 @@
 #!/usr/bin/python3
-""" This module checks if the recieved data is a valid UTF-8 encoding """
+"""UTF-8 validation module.
+"""
 
 
 def validUTF8(data):
-    """ Function to validate recieved data as UTF-8 encoding """
-    # Check each byte in the data
+    """Checks if a given list of integers data set represents a valid UTF-8
+    encoding.
+
+    A character in UTF-8 can be 1 to 4 bytes long.
+    The data set can contain multiple characters.
+    The data will be represented by a list of integers.
+
+    Args:
+        data (list): A list of integers where each integer represents a byte
+        of the data.
+
+    Returns:
+        bool: True if the data is a valid UTF-8 encoding, otherwise False.
+    """
     i = 0
-    while i < len(data):
-        byte = data[i]
-        # Number of bytes a character should occupy based on the most
-        # significant bits
-        if byte >> 7 == 0:  # 1 byte character: 0xxxxxxx
+    n = len(data)
+
+    while i < n:
+        maskedByte = data[i] & 0xff  # Mask to 8 bits (one byte)
+
+        # 1-byte UTF-8 character (ASCII): 0xxxxxxx
+        if maskedByte >> 7 == 0b0:
             length = 0
-        elif byte >> 5 == 0b110:  # 2 bytes character: 110xxxxx
+
+        # 2-byte UTF-8 character: 110xxxxx
+        elif maskedByte >> 5 == 0b110:
             length = 1
-        elif byte >> 4 == 0b1110:  # 3 bytes character: 1110xxxx
+
+        # 3-byte UTF-8 character: 1110xxxx
+        elif maskedByte >> 4 == 0b1110:
             length = 2
-        elif byte >> 3 == 0b11110:  # 4 bytes character: 11110xxx
+
+        # 4-byte UTF-8 character: 11110xxx
+        elif maskedByte >> 3 == 0b11110:
             length = 3
+
+        # If the first byte does not match any valid UTF-8 pattern
         else:
             return False
 
-        # Check if there are enough bytes in the data for this character
-        if i + length >= len(data):
+        # Check if there are enough continuation bytes for this UTF-8 character
+        if i + length >= n:
             return False
 
-        # Check that following bytes start with '10'
+        # Verify the continuation bytes (each should start with '10')
         for j in range(i + 1, i + length + 1):
-            if not (data[j] >> 6 == 0b10):
+            continuationByte = data[j] & 0xff  # Mask to 8 bits
+            if continuationByte >> 6 != 0b10:
                 return False
 
+        # Move to the next character, skipping continuation bytes
         i += length + 1
 
     return True
