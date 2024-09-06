@@ -1,35 +1,72 @@
 #!/usr/bin/python3
-""" This module checks if the recieved data is a valid UTF-8 encoding """
+"""UTF-8 validation module.
+"""
 
 
 def validUTF8(data):
-    """ Function to validate recieved data as UTF-8 encoding """
-    # Check each byte in the data
-    i = 0
-    while i < len(data):
-        byte = data[i]
-        # Number of bytes a character should occupy based on the most
-        # significant bits
-        if byte >> 7 == 0:  # 1 byte character: 0xxxxxxx
-            length = 0
-        elif byte >> 5 == 0b110:  # 2 bytes character: 110xxxxx
-            length = 1
-        elif byte >> 4 == 0b1110:  # 3 bytes character: 1110xxxx
-            length = 2
-        elif byte >> 3 == 0b11110:  # 4 bytes character: 11110xxx
-            length = 3
+    """Checks if a given list of integers data set represents a valid UTF-8
+    encoding.
+
+    A character in UTF-8 can be 1 to 4 bytes long.
+    The data set can contain multiple characters.
+    The data will be represented by a list of integers.
+
+    Args:
+        data (list): A list of integers where each integer represents a byte
+        of the data.
+
+    Returns:
+        bool: True or False.
+    """
+    skip = 0
+    n = len(data)
+    for i in range(n):
+        if skip > 0:
+            skip -= 1
+            continue
+        if type(data[i]) != int or data[i] < 0 or data[i] > 0x10ffff:
+            return False
+        elif data[i] <= 0x7f:
+            skip = 0
+        elif data[i] & 0b11111000 == 0b11110000:
+            # 4-byte utf-8 character encoding
+            span = 4
+            if n - i >= span:
+                next_body = list(map(
+                    lambda x: x & 0b11000000 == 0b10000000,
+                    data[i + 1: i + span],
+                ))
+                if not all(next_body):
+                    return False
+                skip = span - 1
+            else:
+                return False
+        elif data[i] & 0b11110000 == 0b11100000:
+            # 3-byte utf-8 character encoding
+            span = 3
+            if n - i >= span:
+                next_body = list(map(
+                    lambda x: x & 0b11000000 == 0b10000000,
+                    data[i + 1: i + span],
+                ))
+                if not all(next_body):
+                    return False
+                skip = span - 1
+            else:
+                return False
+        elif data[i] & 0b11100000 == 0b11000000:
+            # 2-byte utf-8 character encoding
+            span = 2
+            if n - i >= span:
+                next_body = list(map(
+                    lambda x: x & 0b11000000 == 0b10000000,
+                    data[i + 1: i + span],
+                ))
+                if not all(next_body):
+                    return False
+                skip = span - 1
+            else:
+                return False
         else:
             return False
-
-        # Check if there are enough bytes in the data for this character
-        if i + length >= len(data):
-            return False
-
-        # Check that following bytes start with '10'
-        for j in range(i + 1, i + length + 1):
-            if not (data[j] >> 6 == 0b10):
-                return False
-
-        i += length + 1
-
     return True
